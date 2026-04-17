@@ -102,7 +102,7 @@ const openSettings = () => console.log("Открываем свитки судь
 
         <!-- Футер -->
         <div class="mt-20 opacity-20">
-          <p class="text-[9px] text-amber-600 tracking-[0.5em] uppercase italic font-bold">
+          <p class="text-[9px] text-amber-100 tracking-[0.5em] uppercase italic font-bold">
             © MMXXVI TwentyOne Master | Nikonovich
           </p>
         </div>
