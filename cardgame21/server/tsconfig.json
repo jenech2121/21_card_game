@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",             /* Уровень кода, в который будет скомпилирован TS (современный Node.js это поддерживает) */
+    "module": "CommonJS",           /* Стандарт модулей для Node.js */
+    "lib": ["ES2020"],              /* Библиотеки типов, доступные бэкенду */
+    "outDir": "./dist",             /* Куда попадут скомпилированные файлы .js */
+    "rootDir": "./",                /* Где лежат исходники .ts */
+    "strict": true,                 /* Включаем строгую проверку типов */
+    "esModuleInterop": true,        /* Важно для корректного импорта библиотек типа express */
+    "skipLibCheck": true,           /* Ускоряет сборку, пропуская проверку типов в node_modules */
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",     /* Алгоритм поиска модулей как в Node.js */
+    "resolveJsonModule": true       /* Позволяет импортировать .json файлы напрямую */
+  },
+  "include": ["**/*.ts"],           /* Какие файлы компилировать */
+  "exclude": ["node_modules"]       /* Что игнорировать */
+}
