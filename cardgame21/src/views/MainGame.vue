@@ -3,50 +3,55 @@ import { useGameStore } from '@/stores/gameStore';
 import { useRouter } from 'vue-router';
 import { onMounted } from 'vue';
 
-
 const game = useGameStore();
 const router = useRouter();
 
-const handleExit = () => router.push('/');
-
-onMounted(() => {
+onMounted(async () => {
   if (!game.currentCard && !game.isGameOver) {
-    game.drawNextCard();
+    await game.drawNextCard();
   }
 });
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#051c12] p-6 text-amber-200 font-['Cinzel'] overflow-hidden relative select-none">
+  <!-- ОСНОВНОЙ КОНТЕЙНЕР: Фон стал чуть светлее и сочнее -->
+  <div class="min-h-screen bg-[#0a1f14] p-2 sm:p-6 text-amber-100 font-['Cinzel'] overflow-hidden relative select-none flex flex-col items-center">
     
-    <div class="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
+    <!-- ФОН: Усиленное изумрудное свечение -->
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.12)_0%,transparent_70%)] pointer-events-none"></div>
 
-    <!-- Шапка -->
-    <div class="relative z-10 flex justify-between items-center max-w-6xl mx-auto mb-16">
-      <div class="bg-black/40 px-6 py-2 rounded-full border border-amber-900/50 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-        <span class="text-amber-700 mr-2 uppercase text-[10px] tracking-widest">Счет:</span>
-        <span class="text-2xl font-bold text-amber-500">{{ game.score }}</span>
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+    <div class="relative z-20 flex justify-between items-center w-full max-w-4xl mb-4 sm:mb-8 mt-2 px-2">
+      <!-- Очки -->
+      <div class="bg-black/60 px-4 py-1.5 sm:px-6 sm:py-2 rounded-full border border-amber-900/30 flex items-center gap-2 shadow-xl">
+        <span class="text-amber-700 uppercase text-[9px] sm:text-[11px] font-bold tracking-tighter">Счет:</span>
+        <span class="text-xl sm:text-3xl font-black text-amber-500 tracking-tighter">{{ game.score }}</span>
       </div>
-      <button @click="handleExit" class="px-4 py-2 border border-amber-900/30 rounded hover:text-amber-400 transition-all text-[10px] uppercase tracking-widest">
-        Прервать ритуал
+
+      <!-- ЖИЗНИ -->
+      <div class="flex gap-2 sm:gap-4 items-center bg-emerald-900/20 px-4 py-1.5 sm:px-6 sm:py-2 rounded-full border border-red-900/20 shadow-inner">
+        <div v-for="n in 3" :key="n" class="flex items-center">
+          <span v-if="n <= game.lives" class="text-xl sm:text-3xl text-red-600 drop-shadow-[0_0_10px_rgba(220,38,38,0.8)] animate-pulse">♥</span>
+          <span v-else class="text-xl sm:text-3xl text-white/5 grayscale">♥</span>
+        </div>
+      </div>
+
+      <button @click="router.push('/')" class="text-[9px] sm:text-[11px] uppercase tracking-widest border border-amber-900/30 px-3 py-1.5 rounded bg-black/20 hover:bg-red-950/40 transition-all">
+        Выход
       </button>
     </div>
 
-    <!-- Игровое поле -->
-    <div class="relative z-10 grid grid-cols-4 gap-8 max-w-6xl mx-auto h-[500px]">
-      <!-- 
-        ЗДЕСЬ МЫ УДАЛИЛИ .column-slot И ПРОПИСАЛИ ВСЕ КЛАССЫ НАПРЯМУЮ:
-        border-2 border-emerald-950 (или #022c22) bg-[#0a2e22]/10 
-      -->
+    <!-- ИГРОВОЕ ПОЛЕ -->
+    <div class="relative z-10 grid grid-cols-4 gap-2 sm:gap-8 w-full max-w-5xl mx-auto h-[280px] sm:h-[350px]">
       <div v-for="(col, idx) in game.columns" :key="idx"
            @click="game.placeCard(idx)"
-           class="relative border-2 border-emerald-950 bg-[#0a2e22]/10 rounded-2xl transition-all duration-500 cursor-pointer group hover:border-amber-700/30 hover:bg-[#0a2e22]/30">
+           class="relative border-b-4 border-emerald-800/40 bg-[#061f16]/40 rounded-b-2xl sm:rounded-b-[2rem] cursor-pointer group transition-all hover:bg-emerald-900/20">
         
-        <!-- Счетчик суммы -->
-        <div class="absolute -top-10 left-0 right-0 text-center transition-all duration-300"
-             :class="game.calculateColumnValue(col) > 0 ? 'opacity-100' : 'opacity-0'">
-          <span class="text-[10px] text-amber-800 uppercase">Сумма:</span>
-          <span class="ml-2 font-bold" :class="game.calculateColumnValue(col) === 21 ? 'text-green-500 animate-pulse' : 'text-amber-500'">
+        <!-- Сумма -->
+        <div class="absolute -top-7 sm:-top-10 left-0 right-0 text-center">
+          <span v-if="game.calculateColumnValue(col) > 0" 
+                class="font-black text-lg sm:text-2xl tracking-tighter transition-all duration-300" 
+                :class="game.calculateColumnValue(col) === 21 ? 'text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.5)] scale-125' : 'text-amber-700'">
             {{ game.calculateColumnValue(col) }}
           </span>
         </div>
@@ -54,89 +59,192 @@ onMounted(() => {
         <!-- КАРТЫ В КОЛОНКЕ -->
         <TransitionGroup name="cards">
           <div v-for="(card, cIdx) in col" :key="card.id"
-               class="absolute left-1/2 -translate-x-1/2 transition-all duration-500"
-               :style="{ top: (cIdx * 35) + 'px', zIndex: cIdx }">
-            <div>{{ card.rank }}</div>
+               class="absolute left-1/2 -translate-x-1/2 card-container"
+               :style="{ top: (cIdx * 22) + 'px', zIndex: cIdx }">
+            
+            <div class="card-body shadow-xl border-amber-900/50">
+              <div class="card-corner top-left">
+                <span class="rank">{{ card.rank }}</span>
+                <span class="suit" :class="{'text-red-600': ['♥','♦'].includes(card.suit)}">{{ card.suit }}</span>
               </div>
+              <div class="card-center" :class="{'text-red-600': ['♥','♦'].includes(card.suit)}">{{ card.suit }}</div>
+            </div>
+          </div>
         </TransitionGroup>
 
-        <!-- Пустой слот -->
-        <div v-if="col.length === 0" class="absolute inset-0 flex items-center justify-center opacity-5 group-hover:opacity-20 transition-opacity">
-          <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg>
+        <!-- Подсказка -->
+        <div v-if="col.length === 0" class="absolute inset-0 flex items-center justify-center opacity-5 group-hover:opacity-10 transition-opacity">
+          <span class="text-6xl sm:text-8xl">✧</span>
         </div>
       </div>
     </div>
 
-    <!-- Нижняя панель -->
-    <div class="relative z-10 mt-20 flex justify-center items-end gap-16">
+    <!-- НИЖНЯЯ ПАНЕЛЬ: Увеличенная карта "Твой жребий" -->
+    <div class="relative z-20 mt-auto mb-6 sm:mb-10 flex justify-center items-center gap-10 sm:gap-24 pt-4">
       
-      <!-- Источник -->
-      <div class="hidden md:flex flex-col items-center group">
-         <PlayingCard :back="true" class="w-28 opacity-40 grayscale group-hover:grayscale-0 transition-all duration-700" />
-         <p class="mt-4 text-[9px] uppercase text-amber-900 font-black tracking-widest">Источник</p>
+      <!-- КОЛОДА (увеличенная) -->
+      <div class="flex flex-col items-center group opacity-80">
+        <div class="mythic-card-back-large shadow-2xl">
+           <div class="gold-inner-border-large"></div>
+           <div class="mystic-pattern-large"></div>
+           <span class="emblem-large">👁</span>
+        </div>
+        <p class="mt-2 text-[9px] uppercase tracking-[0.4em] text-emerald-800 font-black">Колода</p>
       </div>
 
-      <!-- ТЕКУЩАЯ КАРТА -->
+      <!-- ТЕКУЩАЯ КАРТА - УВЕЛИЧЕННАЯ -->
       <div class="flex flex-col items-center">
-        <Transition name="new-card" mode="out-in">
-          <div v-if="game.currentCard && !game.isGameOver" :key="game.currentCard.id"
-               class="relative z-20">
-            <div class="absolute inset-0 bg-amber-500/20 blur-2xl rounded-full animate-pulse"></div>
-            <PlayingCard 
-              :suit="game.getSuitName(game.currentCard.suit)" 
-              :rank="game.currentCard.rank.toLowerCase()" 
-              class="w-32 md:w-36 shadow-[0_0_50px_rgba(0,0,0,0.5)] transform scale-110"
-            />
+        <Transition name="draw-card" mode="out-in">
+          <div v-if="game.currentCard && !game.isGameOver" :key="game.currentCard.id" class="relative">
+            <!-- Свечение -->
+            <div class="absolute -inset-10 bg-amber-500/10 blur-3xl rounded-full animate-pulse"></div>
+            
+            <div class="large-card-body current-card-glow shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+               <div class="large-card-corner top-left">
+                 <span class="large-rank">{{ game.currentCard.rank }}</span>
+                 <span class="large-suit" :class="{'text-red-600': ['♥','♦'].includes(game.currentCard.suit)}">{{ game.currentCard.suit }}</span>
+               </div>
+               <div class="large-card-center" :class="{'text-red-600': ['♥','♦'].includes(game.currentCard.suit)}">
+                 {{ game.currentCard.suit }}
+               </div>
+            </div>
           </div>
         </Transition>
-        <p class="mt-8 text-amber-700 uppercase tracking-[0.5em] text-[10px] font-black italic">Следующая жертва</p>
+        <p class="mt-6 sm:mt-10 text-amber-700 uppercase tracking-[0.5em] text-[10px] font-black italic animate-pulse">Твой жребий</p>
       </div>
     </div>
 
-    <!-- Модалка конца игры -->
+    <!-- МОДАЛКА КОНЦА -->
     <Transition name="modal">
-      <div v-if="game.isGameOver" class="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-[#020a06]/95 backdrop-blur-xl">
-        <div class="max-w-md w-full bg-[#0a2e22] border border-amber-900/40 p-10 text-center shadow-[0_0_100px_rgba(0,0,0,1)] relative">
-          <div class="absolute -top-1 -left-1 w-4 h-4 border-t border-l border-amber-500"></div>
-          <div class="absolute -bottom-1 -right-1 w-4 h-4 border-b border-r border-amber-500"></div>
-          
-          <h2 class="font-['Cinzel_Decorative'] text-5xl text-red-800 mb-6 uppercase tracking-tighter">Ритуал Оборван</h2>
-          <div class="text-2xl text-amber-500 mb-8 font-bold tracking-widest">Счет: {{ game.score }}</div>
-          
-          <div class="mb-10 space-y-3 bg-black/20 p-4 border border-white/5">
-            <h3 class="text-[10px] text-amber-800 uppercase tracking-widest mb-2 font-black">Тени прошлого</h3>
-            <div v-for="(leader, i) in game.leaderboard.slice(0, 3)" :key="i" class="flex justify-between text-xs tracking-widest uppercase">
-              <span class="text-amber-900">{{ leader.name }}</span>
-              <span class="text-amber-600">{{ leader.score }}</span>
-            </div>
-          </div>
-
-          <button @click="game.resetGame" class="w-full py-4 bg-transparent border border-amber-600 text-amber-500 font-black uppercase tracking-widest hover:bg-amber-600 hover:text-[#051c12] transition-all">
-            Начать новый цикл
+      <div v-if="game.isGameOver" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+        <div class="max-w-xs sm:max-w-md w-full bg-[#0a1f14] border-2 border-red-900/40 p-10 text-center rounded-2xl relative shadow-2xl">
+          <h2 class="text-5xl sm:text-6xl text-red-700 mb-4 uppercase font-black tracking-tighter">Смерть</h2>
+          <p class="text-lg sm:text-xl text-amber-500 mb-10 uppercase tracking-widest font-bold">Счет: {{ game.score }}</p>
+          <button @click="game.resetGame" class="w-full py-5 bg-red-900 text-white font-black uppercase tracking-widest hover:bg-red-700 transition-all active:scale-95 shadow-lg">
+            Воскреснуть
           </button>
         </div>
       </div>
     </Transition>
-
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,0.9)_100%)] pointer-events-none"></div>
   </div>
 </template>
 
 <style scoped>
-/* Анимации полета карт */
-.cards-enter-active {
-  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.cards-enter-from {
-  opacity: 0;
-  transform: translate(-50%, 300px) rotate(15deg) scale(0.5);
+/* РАЗМЕРЫ КАРТ В КОЛОНКАХ (оставляем как было) */
+.card-container {
+  width: 19vw; max-width: 110px;
+  height: 27vw; max-height: 155px;
 }
 
-.new-card-enter-active { transition: all 0.4s ease; }
-.new-card-leave-active { transition: all 0.3s ease; }
-.new-card-enter-from { opacity: 0; transform: scale(0.8); filter: blur(10px); }
-.new-card-leave-to { opacity: 0; transform: translateY(-50px) scale(1.1); filter: blur(10px); }
+.card-body {
+  width: 100%; height: 100%;
+  background: linear-gradient(135deg, #fffef5 0%, #f4f0db 100%);
+  border: 1.5px solid #92400e;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: #020a06; position: relative;
+}
 
-.modal-enter-active { transition: all 1s ease; }
-.modal-enter-from { opacity: 0; transform: scale(1.05); filter: blur(20px); }
+.card-corner {
+  position: absolute; top: 4px; left: 4px;
+  display: flex; flex-direction: column; align-items: center; line-height: 0.9;
+}
+.rank { font-weight: 900; font-size: 1.3rem; letter-spacing: -1px; }
+.suit { font-size: 0.9rem; }
+.card-center { font-size: 3rem; opacity: 0.9; }
+
+/* ========== УВЕЛИЧЕННАЯ РУБАШКА КОЛОДЫ ========== */
+.mythic-card-back-large {
+  width: 32vw; max-width: 110px;
+  height: 46vw; max-height: 150px;
+  background: linear-gradient(135deg, #0a3d29 0%, #041a10 100%);
+  border: 3px solid #b45309;
+  border-radius: 16px;
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.gold-inner-border-large {
+  position: absolute; inset: 8px;
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  border-radius: 12px;
+}
+.mystic-pattern-large {
+  position: absolute; inset: 0; opacity: 0.1;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0L24 16L40 20L24 24L20 40L16 24L0 20L16 16Z' fill='%23f59e0b'/%3E%3C/svg%3E");
+}
+.emblem-large { font-size: 3rem; color: #f59e0b; opacity: 0.25; }
+
+/* ========== УВЕЛИЧЕННАЯ КАРТА "ТВОЙ ЖРЕБИЙ" ========== */
+.large-card-body {
+  width: 32vw; max-width: 150px;
+  height: 46vw; max-height: 200px;
+  background: linear-gradient(135deg, #fffef5 0%, #f4f0db 100%);
+  border: 3px solid #f59e0b;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  color: #020a06; position: relative;
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
+}
+
+.large-card-corner {
+  position: absolute; top: 12px; left: 12px;
+  display: flex; flex-direction: column; align-items: center; line-height: 0.9;
+}
+
+.large-rank {
+  font-weight: 900;
+  font-size: 2.5rem;
+  letter-spacing: -2px;
+}
+
+.large-suit {
+  font-size: 1.8rem;
+}
+
+.large-card-center {
+  font-size: 6rem;
+  opacity: 0.9;
+}
+
+.current-card-glow { 
+  border-width: 4px; 
+  border-color: #f59e0b;
+  box-shadow: 0 0 40px rgba(245, 158, 11, 0.5);
+}
+
+/* АНИМАЦИИ */
+.draw-card-enter-active { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.draw-card-enter-from { opacity: 0; transform: translateX(-100px) scale(0.5); }
+
+.cards-enter-active { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.cards-enter-from { opacity: 0; transform: translate(-50%, 150px) scale(1.1); }
+
+/* Адаптив для мобильных устройств */
+@media (max-width: 640px) {
+  .rank { font-size: 1rem; }
+  .card-center { font-size: 2.2rem; }
+  .card-container { width: 30vw; height: 30vw; }
+  
+  .large-rank { font-size: 1.8rem; }
+  .large-suit { font-size: 1.2rem; }
+  .large-card-center { font-size: 3.5rem; }
+  
+  .large-card-body {
+    width: 40vw;
+    max-width: 180px;
+    height: 56vw;
+    max-height: 250px;
+  }
+  
+  .mythic-card-back-large {
+    width: 40vw;
+    max-width: 180px;
+    height: 56vw;
+    max-height: 250px;
+  }
+  
+  .emblem-large { font-size: 2rem; }
+}
+
+.text-red-600 { color: #b91c1c; }
 </style>
