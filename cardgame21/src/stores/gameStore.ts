@@ -16,7 +16,30 @@ export const useGameStore = defineStore('game', {
   }),
   
   actions: {
+    /**
+     * Инициализация Telegram WebApp
+     * Устанавливает имя игрока, расширяет окно и настраивает цвета
+     */
+    initTelegram() {
+      const tg = (window as any).Telegram?.WebApp;
+
+      if (tg) {
+        tg.ready(); // Сообщаем Telegram, что мы загрузились
+        tg.expand(); // Разворачиваем игру на весь экран
+        
+        // Устанавливаем имя игрока из Telegram
+        if (tg.initDataUnsafe?.user) {
+          this.playerName = tg.initDataUnsafe.user.first_name;
+        }
+        
+        // Подкрасим рамку и фон окна Telegram под цвет твоей игры
+        tg.setHeaderColor('#051c12');
+        tg.setBackgroundColor('#051c12');
+      }
+    },
+
     async resetGame() {
+      this.initTelegram(); // Инициализируем ТГ при каждом сбросе/старте
       this.columns = [[], [], [], []];
       this.score = 0;
       this.lives = 3;
@@ -38,11 +61,12 @@ export const useGameStore = defineStore('game', {
 
       const targetColumn = this.columns[colIndex];
       
-      // ИСПРАВЛЕНИЕ ДЛЯ TS: Проверяем, что колонка существует
+      // Проверяем, что колонка существует
       if (!targetColumn) return;
 
       const cardToPlace = { ...this.currentCard };
 
+      // Расчет значения карты, если оно не пришло с сервера
       if (cardToPlace.value === undefined || cardToPlace.value === null) {
         if (cardToPlace.rank === 'A') cardToPlace.value = 11;
         else if (['K', 'Q', 'J'].includes(cardToPlace.rank)) cardToPlace.value = 10;
@@ -61,7 +85,6 @@ export const useGameStore = defineStore('game', {
         this.score += isFiveCardCombo ? 150 : 100;
         
         setTimeout(() => {
-          // ИСПРАВЛЕНИЕ ДЛЯ TS: Повторная проверка перед очисткой
           if (this.columns[colIndex]) {
             this.columns[colIndex] = [];
           }
@@ -88,7 +111,6 @@ export const useGameStore = defineStore('game', {
     },
 
     calculateColumnValue(cards: any[] | undefined) {
-      // ИСПРАВЛЕНИЕ ДЛЯ TS: Обработка случая, когда cards не переданы
       if (!cards || !cards.length) return 0;
       
       let sum = cards.reduce((acc, card) => acc + (card.value || 0), 0);

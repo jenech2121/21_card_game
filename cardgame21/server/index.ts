@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import { Telegraf } from 'telegraf';
+
+const bot =  new Telegraf('8650182991:AAHoe3iOoSiN-F03O3ux6v4dHAnieU6Wd8w')
 
 const app = express();
 app.use(cors());
@@ -14,6 +17,19 @@ const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
 
 // Хранилище в памяти (для продакшена лучше БД)
 let leaderboard: { name: string; score: number }[] = [];
+
+bot.start((ctx) => {
+  ctx.reply(`Приветствую, ${ctx.from.first_name}! Готов испытать судьбу в Мистических 21?`, {
+    reply_markup: {
+      inline_keyboard: [
+        // Эта кнопка открывает Mini App прямо в чате
+        [{ text: "Играть 🃏", web_app: { url: ' https://two1cardgame.onrender.com' } }]
+      ]
+    }
+  });
+});
+
+bot.launch();
 
 // API: Генерация случайной карты (Бесконечная колода)
 app.get('/api/draw', (req, res) => {

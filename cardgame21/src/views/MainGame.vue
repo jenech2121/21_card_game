@@ -12,6 +12,13 @@ onMounted(async () => {
     await game.drawNextCard();
   }
 });
+
+onMounted(async () => {
+  game.initTelegram(); // Вызываем настройку Telegram
+  if (!game.currentCard && !game.isGameOver) {
+    await game.drawNextCard();
+  }
+});
 </script>
 
 <template>
