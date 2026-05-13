@@ -2,41 +2,49 @@ import express from 'express';
 import cors from 'cors';
 import { Telegraf } from 'telegraf';
 
+// 1. ИСПРАВЛЕНИЕ: Переменные без кавычек
 const BOT_TOKEN = '8650182991:AAHoe3iOoSiN-F03O3ux6v4dHAnieU6Wd8w';
-const bot =  new Telegraf('BOT_TOKEN');
-
 const WEB_APP_URL = 'https://cardgame21.onrender.com'; 
+
+// Передаем переменную BOT_TOKEN, а не строку 'BOT_TOKEN'
+const bot = new Telegraf(BOT_TOKEN);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 interface Card {
-  id: string; suit: string; rank: string; value: number;
+  id: string; 
+  suit: string; 
+  rank: string; 
+  value: number;
 }
 
 const suits = ['♠', '♣', '♥', '♦'];
 const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
-// Хранилище в памяти (для продакшена лучше БД)
 let leaderboard: { name: string; score: number }[] = [];
 
+// 2. ИСПРАВЛЕНИЕ: Кнопка запуска Mini App
 bot.start((ctx) => {
-  ctx.reply(`Приветствую, ${ctx.from.first_name}! Готов испытать судьбу в Мистических 21?`, {
+  ctx.reply(`Приветствую, ${ctx.from.first_name}! 🌙\nГотов испытать судьбу в Мистических 21?`, {
     reply_markup: {
       inline_keyboard: [
-        // Эта кнопка открывает Mini App прямо в чате
-        [{ text: "Играть 🃏", web_app: { url: ' WEB_APP_URL' } }]
+        // Передаем переменную WEB_APP_URL без кавычек
+        [{ text: "Вступить в игру 🃏", web_app: { url: WEB_APP_URL } }]
       ]
     }
   });
 });
 
-bot.launch().then(() =>{
-  console.log('Telegram Bot запущен и готов к игре!')
-});
+// Запуск бота с обработкой ошибок
+bot.launch()
+  .then(() => console.log('✅ Telegram Bot запущен и готов к игре!'))
+  .catch((err) => console.error('❌ Ошибка запуска бота:', err));
 
-// API: Генерация случайной карты (Бесконечная колода)
+// --- API ЭНДПОИНТЫ ---
+
+// API: Генерация случайной карты
 app.get('/api/draw', (req, res) => {
   const suit = suits[Math.floor(Math.random() * suits.length)];
   const rank = ranks[Math.floor(Math.random() * ranks.length)];
@@ -61,7 +69,7 @@ app.post('/api/leaderboard', (req, res) => {
   if (score > 0) {
     leaderboard.push({ name: name || 'Аноним', score });
     leaderboard.sort((a, b) => b.score - a.score);
-    leaderboard = leaderboard.slice(0, 10); // Только ТОП-10
+    leaderboard = leaderboard.slice(0, 10);
   }
   res.json(leaderboard);
 });
@@ -70,4 +78,12 @@ app.get('/api/leaderboard', (req, res) => {
   res.json(leaderboard);
 });
 
-app.listen(3001, () => console.log('Server running on port 3001'));
+// 3. ИСПРАВЛЕНИЕ: Порт 3000 (для работы с Go-прокси в main.go)
+const PORT = 3000;
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`[Node.js] Logic running on http://127.0.0.1:${PORT}`);
+});
+
+// Грациозная остановка бота при выключении сервера
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
