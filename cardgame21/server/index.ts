@@ -4,7 +4,7 @@ import { Telegraf } from 'telegraf';
 
 // 1. ИСПРАВЛЕНИЕ: Переменные без кавычек
 const BOT_TOKEN = '8650182991:AAHoe3iOoSiN-F03O3ux6v4dHAnieU6Wd8w';
-const WEB_APP_URL = 'https://cardgame21.onrender.com'; 
+const WEB_APP_URL = 'https://t.me/Mythic21gamebot/play'; 
 
 // Передаем переменную BOT_TOKEN, а не строку 'BOT_TOKEN'
 const bot = new Telegraf(BOT_TOKEN);
