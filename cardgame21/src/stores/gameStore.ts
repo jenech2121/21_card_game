@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
 
+// Оставляем локальный URL для разработки
 const api = axios.create({ baseURL: 'http://localhost:3001/api' });
 
 export const useGameStore = defineStore('game', {
@@ -39,7 +40,7 @@ export const useGameStore = defineStore('game', {
         const res = await api.get('/draw');
         this.currentCard = res.data;
       } catch (e) {
-        console.error("Ошибка призыва карты");
+        console.error("Ошибка призыва карты. Проверь бэкенд!");
       }
     },
 
@@ -47,34 +48,53 @@ export const useGameStore = defineStore('game', {
       if (this.isGameOver || !this.currentCard) return;
 
       const targetColumn = this.columns[colIndex];
-      // Гарантируем наличие числового значения карты
       const cardToPlace = { ...this.currentCard };
-      if (!cardToPlace.value) {
-         if (cardToPlace.rank === 'A') cardToPlace.value = 11;
-         else if (['K', 'Q', 'J'].includes(cardToPlace.rank)) cardToPlace.value = 10;
-         else cardToPlace.value = parseInt(cardToPlace.rank);
+
+      // Гарантируем наличие числового значения карты перед вставкой
+      if (cardToPlace.value === undefined || cardToPlace.value === null) {
+        if (cardToPlace.rank === 'A') cardToPlace.value = 11;
+        else if (['K', 'Q', 'J'].includes(cardToPlace.rank)) cardToPlace.value = 10;
+        else cardToPlace.value = parseInt(cardToPlace.rank) || 10;
       }
 
+      // 1. Добавляем карту
       targetColumn.push(cardToPlace);
-      const total = this.calculateColumnValue(targetColumn);
 
-      if (total === 21) {
-        this.score += 100;
-        setTimeout(() => { this.columns[colIndex] = []; }, 300);
+      // 2. Считаем текущее состояние колонки
+      const total = this.calculateColumnValue(targetColumn);
+      const cardCount = targetColumn.length;
+
+      // 3. ПРОВЕРКА ПОБЕДНЫХ УСЛОВИЙ
+      // Условие 1: Набрали ровно 21
+      // Условие 2: Собрали 5 карт и нет перебора (Combo)
+      const isTwentyOne = total === 21;
+      const isFiveCardCombo = cardCount === 5 && total <= 21;
+
+      if (isTwentyOne || isFiveCardCombo) {
+        // Начисляем очки (за комбо из 5 карт даем чуть больше)
+        this.score += isFiveCardCombo ? 150 : 100;
+        
+        // Очищаем колонку с задержкой для анимации
+        setTimeout(() => {
+          this.columns[colIndex] = [];
+        }, 300);
       } 
+      // 4. ПРОВЕРКА ПЕРЕБОРА
       else if (total > 21) {
-        this.lives--; // Жизнь уходит
-        console.log(`Осталось жизней: ${this.lives}`);
+        this.lives--;
         
         if (this.lives <= 0) {
           this.isGameOver = true;
           await this.saveScore();
         } else {
-          // Сжигаем колонку, но продолжаем
-          setTimeout(() => { this.columns[colIndex] = []; }, 300);
+          // Если жизни еще есть, просто сжигаем колонку
+          setTimeout(() => {
+            this.columns[colIndex] = [];
+          }, 300);
         }
       }
 
+      // 5. Тянем следующую карту, если игра продолжается
       if (!this.isGameOver) {
         await this.drawNextCard();
       }
@@ -82,10 +102,11 @@ export const useGameStore = defineStore('game', {
 
     calculateColumnValue(cards: any[]) {
       if (!cards || !cards.length) return 0;
+      
       let sum = cards.reduce((acc, card) => acc + (card.value || 0), 0);
       let aces = cards.filter(c => c.rank === 'A').length;
       
-      // Логика туза: если перебор, считаем туз как 1 (вычитаем 10)
+      // Мягкая логика Туза: если перебор, Туз превращается из 11 в 1
       while (sum > 21 && aces > 0) {
         sum -= 10;
         aces--;
@@ -95,9 +116,14 @@ export const useGameStore = defineStore('game', {
 
     async saveScore() {
       try {
-        const res = await api.post('/leaderboard', { name: this.playerName, score: this.score });
+        const res = await api.post('/leaderboard', { 
+          name: this.playerName, 
+          score: this.score 
+        });
         this.leaderboard = res.data;
-      } catch (e) {}
+      } catch (e) {
+        console.error("Ошибка сохранения счета");
+      }
     }
   }
 });
