@@ -2,7 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import { Telegraf } from 'telegraf';
 
-const bot =  new Telegraf('8650182991:AAHoe3iOoSiN-F03O3ux6v4dHAnieU6Wd8w')
+const BOT_TOKEN = '8650182991:AAHoe3iOoSiN-F03O3ux6v4dHAnieU6Wd8w';
+const bot =  new Telegraf('BOT_TOKEN');
+
+const WEB_APP_URL = 'https://cardgame21.onrender.com'; 
 
 const app = express();
 app.use(cors());
@@ -23,13 +26,15 @@ bot.start((ctx) => {
     reply_markup: {
       inline_keyboard: [
         // Эта кнопка открывает Mini App прямо в чате
-        [{ text: "Играть 🃏", web_app: { url: ' https://two1cardgame.onrender.com' } }]
+        [{ text: "Играть 🃏", web_app: { url: ' WEB_APP_URL' } }]
       ]
     }
   });
 });
 
-bot.launch();
+bot.launch().then(() =>{
+  console.log('Telegram Bot запущен и готов к игре!')
+});
 
 // API: Генерация случайной карты (Бесконечная колода)
 app.get('/api/draw', (req, res) => {
