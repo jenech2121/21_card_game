@@ -1,14 +1,10 @@
 # --- ЭТАП 1: Сборка фронтенда (Vue) ---
 FROM node:20-alpine AS build-stage
 WORKDIR /app
-
-# Копируем конфиги и устанавливаем зависимости фронтенда
+# Используем корневой package.json для сборки Vue
 COPY package*.json ./
 RUN npm install
-
-# Копируем всё остальное и собираем статику
 COPY . .
-# ОБЯЗАТЕЛЬНО build, а не dev, чтобы Docker мог завершить сборку
 RUN npm run build 
 
 # --- ЭТАП 2: Финальный образ (Go + Node.js + Frontend) ---
@@ -19,25 +15,29 @@ RUN apk add --no-cache nodejs npm
 
 WORKDIR /app
 
-# 1. Копируем результат сборки Vue (папку dist)
+# 1. Копируем результат сборки Vue
 COPY --from=build-stage /app/dist ./dist
 
-# 2. Копируем папку с логикой сервера Node.js
+# 2. Копируем папку сервера
 COPY server ./server
 
-# 3. Копируем package.json в корень и устанавливаем зависимости сервера
-COPY package*.json ./
+# 3. !!! ВАЖНО !!! Устанавливаем зависимости именно для СЕРВЕРА
+# Переходим в папку server, копируем её package.json и устанавливаем библиотеки
+WORKDIR /app/server
+COPY server/package*.json ./
 RUN npm install --production
+WORKDIR /app
 
-# 4. Устанавливаем tsx и typescript глобально для запуска npx tsx
+# 4. Копируем корневой package.json (на всякий случай) и инструменты
+COPY package*.json ./
 RUN npm install -g tsx typescript
 
-# 5. Копируем оркестратор Go
+# 5. Копируем и собираем Go
 COPY main.go go.mod ./
-# Собираем бинарник (убрал лишний дефис в названии)
+RUN go mod tidy
 RUN go build -o main-server main.go
 
-# Открываем порт для Render
+# Открываем порт
 EXPOSE 8080
 
 # Запускаем Go-сервер
